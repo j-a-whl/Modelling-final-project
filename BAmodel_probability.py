@@ -11,9 +11,7 @@ import random as r
 import numpy as np
 #n, p = 1, .33  # n = coins flipped, p = prob of success
 #s = np.random.binomial(n, p, 100)
-
 import matplotlib.pyplot as plt
-
 
 t = 50 #duration of the simulation
 
