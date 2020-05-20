@@ -48,6 +48,12 @@ def infect(G, time, root, num, visited):
                 infect(G, time, connection, G.nodes[root]['state'][time], visited)
             else:
                 return
+            
+def edge_counter(G, node): 
+    num = 0
+    for connection in G.edges(node):
+        num += 1
+    return num 
 
 def state(G, connected_state, node, time): 
     # a function that determines the next state of the given node 
@@ -57,15 +63,15 @@ def state(G, connected_state, node, time):
     if lst[time] == 0: # if the node is susceptible 
         if len(lst)<(time+2):
             if connected_state == 1:
-                x = np.random.binomial(1, 0.1) #Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                x = np.random.binomial(1, 0.1) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
                 lst.append(x)
             else:
                 lst.append(0)
         else: 
             if connected_state == 1: 
-                x = np.random.binomial(1, connected*0.1) #Accounts for more then one infected neighbour (the probability for this is definetly wrong)
+                x = np.random.binomial(1, 0.1*(1+(connected)/edge_counter(G, node))) # beta *(1+infected connected nodes/total connected nodes)
                 lst[time+1] = x 
-    elif lst[time] == 2: #if node is recovered 
+    elif lst[time] == 2: # if node is recovered 
         if len(lst)<(time+2):
             lst.append(2)
     elif lst[time] == 1: # if node is infected 
@@ -83,7 +89,7 @@ def spread(G, n):
     G.nodes[root]['state'][time] = 1
     while time < t:
         visited =[]
-        state(G, G.nodes[root]['state'][time], root, time)#updates root
+        state(G, G.nodes[root]['state'][time], root, time) # updates root
         infect(G, time, root, G.nodes[root]['state'][time], visited)
         time += 1
     print(nx.get_node_attributes(G,'state'))
@@ -106,10 +112,11 @@ def percolate(G):
 
 def recover(lst): 
     # function that determines whether or not an infected node recovers
-    summ = 0 
+    summ = 0
+    num = r.randint(14, 35) # randomly chooses the length of infectious period of individual
     for i in lst: 
         summ += i 
-    if summ >= 14: 
+    if summ >= num: 
         return True 
     else: 
         return False
