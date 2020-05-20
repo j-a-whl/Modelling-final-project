@@ -27,6 +27,7 @@ def add_attributes(G):
     for node in G:
         G.nodes[node]['state'] = [0] #0 is susceptibale, 1 is infected, 2 is recovered -> initiliases a grid of susceptable nodes
         G.nodes[node]['infected_connections'] = [0]
+        #add visited attribute that gets wiped after every time step so to speed up the function
     #print(nx.get_node_attributes(G,'state'))
     return(G)
 
@@ -75,7 +76,6 @@ def state(G, connected_state, node, time):
                 lst.append(1)
     return 
 
-
 def spread(G, n): 
     # function to spread a disease over a given number of time steps 
     time = 0
@@ -103,7 +103,6 @@ def percolate(G):
         if centralities[edge] > 0.006:
             remove.append(edge)
     G.remove_edges_from(remove) # The nodes from remove are removed from the graph:
-
 
 def recover(lst): 
     # function that determines whether or not an infected node recovers
