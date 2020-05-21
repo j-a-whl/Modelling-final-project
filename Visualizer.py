@@ -74,10 +74,10 @@ def showSIRS(G,filename,beta,gamma,xi,nb_frames,data):
     frames=[{'data':[edge_trace, node_trace[k]],
                  'layout':{
                     #change this if you want to change the information visualized at the top of the page 
-                    'title':'<br>S (blue): '+str(data[k][0])+' I (red):'+str(data[k][1])+' R (green): '+str(data[k][2]),
+                    'title':'<br>S (blue): '+str(data[0][k])+' I (red):'+str(data[1][k])+' R (green): '+str(data[2][k]),
                     'titlefont_size':16},
     'name':str(k)} 
-    for k in range(nb_frames)]
+    for k in range(nb_frames)] #minor change to lorenzo's code in line 77 so it is in line with the strcuture of our model.
     
     
     print("Frames computed.")
