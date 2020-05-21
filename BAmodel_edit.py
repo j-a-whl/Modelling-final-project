@@ -63,7 +63,7 @@ def edge_counter(G, node):
 def state(G, connected_state, node, time): 
     # a function that determines the next state of the given node 
     connected = count(G, connected_state, node, time)
-    print(connected)
+    #print(connected)
     lst = G.nodes[node]['state'] # list of states of the specific node
     if lst[time] == 0: # if the node is susceptible 
         if len(lst)<(time+2):
@@ -72,10 +72,15 @@ def state(G, connected_state, node, time):
                 lst.append(x)
             else:
                 lst.append(0)
-        else: 
+        else:
+            if lst[time+1] == 0 and connected_state == 1: # if the node has been in contact with infected indivduals 
+                x = np.random.binomial(1, 0.05) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                lst[time+1] = x
+            '''
             if connected_state == 1: 
                 x = np.random.binomial(1, 0.05*(1+(connected)/edge_counter(G, node))) # beta *(1+infected connected nodes/total connected nodes)
                 lst[time+1] = x 
+            '''
     elif lst[time] == 2: # if node is recovered 
         if len(lst)<(time+2):
             lst.append(2)
@@ -97,7 +102,7 @@ def spread(G, n):
         state(G, G.nodes[root]['state'][time], root, time) # updates root
         infect(G, time, root, G.nodes[root]['state'][time], visited)
         time += 1
-    print(nx.get_node_attributes(G,'state'))
+    #print(nx.get_node_attributes(G,'state'))
 
 def add_edge(lst, edge): 
     # function that adds all the visited edges to a list
