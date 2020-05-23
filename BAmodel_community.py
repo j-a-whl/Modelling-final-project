@@ -221,11 +221,10 @@ def infected_communities(G, time):
     
     #there are just some ideas. could be a method of perc taht could be compared to 
     #homogeneous percolation based on sole edge_betweeness_centrality 
+    i = [] #infected nodes at time t in the largest community
+    s = [] #suceptible nodes at time t in the largest community
     
     for node in communities[0]: #looks at each node in largest community
-        
-        i = [] #infected nodes at time t in the largest community
-        s = [] #suceptible nodes at time t in the largest community
         
         if G.nodes[node]['state'][time] == 1: #looks at states of nodes at time t
             
@@ -235,7 +234,7 @@ def infected_communities(G, time):
             
             s.append(node)
             
-    return len(i)/len(s) #computes ratio of number of infected/susc
+    return i, s #computes ratio of number of infected/susc
     print(len(i)/len(s))
 
     #if len(i)/len(s) >= 0.3 -> ...HOW DO WE REMOVE THE EDGES THAT CONNECT 
