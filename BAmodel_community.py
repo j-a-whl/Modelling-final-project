@@ -52,16 +52,18 @@ def add_weights(G):
         #print( G.get_edge_data(edge[0], edge[1]))
     return
 
-def infect(G, time, root, num, visited):
+def infect(G, time, root, num, visited, weight):
     # a recursive funtion that recuesively visits all the nodes and updates their states based on the states of their neighbours 
-        state(G, num, root, time)
+        state(G, num, root, time, weight)
         for connection in G.edges(root):
             if connection not in visited:
+                weight = G[connection[0]][connection[1]]['weight']
+                #print(weight)
                 visited = add_edge(visited, connection)#adds edge to a list of visited edges
                 connection = connection[-1] #gets the connected node
-                infect(G, time, connection, G.nodes[root]['state'][time], visited)
+                infect(G, time, connection, G.nodes[root]['state'][time], visited, weight)
             else:
-                return
+                return 
             
 def edge_counter(G, node): 
     num = 0
@@ -69,28 +71,27 @@ def edge_counter(G, node):
         num += 1
     return num 
 
-def state(G, connected_state, node, time): 
+def state(G, connected_state, node, time, weight): 
     # a function that determines the next state of the given node 
     connected = count(G, connected_state, node, time)
-    #weight = 
-    #print(connected)
     lst = G.nodes[node]['state'] # list of states of the specific node
     if lst[time] == 0: # if the node is susceptible 
         if len(lst)<(time+2):
             if connected_state == 1:
-                x = np.random.binomial(1, 0.05) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
                 lst.append(x)
             else:
                 lst.append(0)
         else:
             if lst[time+1] == 0 and connected_state == 1: # if the node has been in contact with infected indivduals 
-                x = np.random.binomial(1, 0.05) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
                 lst[time+1] = x
             '''
             if connected_state == 1: 
                 x = np.random.binomial(1, 0.05*(1+(connected)/edge_counter(G, node))) # beta *(1+infected connected nodes/total connected nodes)
                 lst[time+1] = x 
             '''
+            
     elif lst[time] == 2: # if node is recovered 
         if len(lst)<(time+2):
             lst.append(2)
@@ -107,10 +108,11 @@ def spread(G, n):
     time = 0
     root = r.randint(0, n-1)
     G.nodes[root]['state'][time] = 1
+    weight = 1 # initial weight for root infected node, not important 
     while time < t:
         visited =[]
-        state(G, G.nodes[root]['state'][time], root, time) # updates root
-        infect(G, time, root, G.nodes[root]['state'][time], visited)
+        state(G, G.nodes[root]['state'][time], root, time, weight) # updates root
+        infect(G, time, root, G.nodes[root]['state'][time], visited, weight)
         time += 1
     #print(nx.get_node_attributes(G,'state'))
 
@@ -196,7 +198,6 @@ def infected_communities(G, time):
     #from the result we can see that there is one community that is the biggest one
     
     communities_generator = community.girvan_newman(G)
-    
     next_community2 = next(communities_generator) #will split graph into 2 communities
     next_community3 = next(communities_generator)
     next_community4 = next(communities_generator)
@@ -233,9 +234,23 @@ def infected_communities(G, time):
         elif G.nodes[node]['state'][time] == 0:
             
             s.append(node)
-            
+    print(len(i)/len(s))       
     return i, s #computes ratio of number of infected/susc
-    print(len(i)/len(s))
+    
+
+def rm_edge_weight(G, n): # removes every edges top n weighted nodes
+    for node in G:
+        top = []
+        for edge in G.edges(node):
+            if len(top)<(n):
+                top.append(edge)
+                top.sort()
+            elif G[edge[0]][edge[1]]['weight'] > top[0]: 
+                top = top[1:]
+                top.append(edge)
+                top.sort()
+        G.remove_edges_from(top) 
+
 
     #if len(i)/len(s) >= 0.3 -> ...HOW DO WE REMOVE THE EDGES THAT CONNECT 
     #LARGEST COMMUNITY WITH ALL OTHER NODES THAT ARE OUTSIDE OF THAT COMMUNITY?
