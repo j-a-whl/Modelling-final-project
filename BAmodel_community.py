@@ -227,11 +227,11 @@ def infected_communities(G, time):
         i = [] #infected nodes at time t in the largest community
         s = [] #suceptible nodes at time t in the largest community
         
-        if node['state'][time] == 1: #looks at states of nodes at time t
+        if G.nodes[node]['state'][time] == 1: #looks at states of nodes at time t
             
             i.append(node) #adds that node to list of infected ones
             
-        elif node['state'][time] == 0:
+        elif G.nodes[node]['state'][time] == 0:
             
             s.append(node)
             
