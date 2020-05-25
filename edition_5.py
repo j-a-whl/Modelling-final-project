@@ -67,12 +67,13 @@ def spread(G, n):
     # function to spread a disease over a given number of time steps 
     time = 0
     root = r.randint(0, n-1)
+    random_remove(G, 0.1) # percentages of edges that are going to be removed
     G.nodes[root]['state'][time] = 1
-    weight = 1 # initial weight for root infected node, not important 
+    weight = 1 # initial weight for root infected node, not important
     while time < t:
-        if time == 1: 
-            percolate(G)
-            rm_edge_weight(G, 0.5)
+        if time == 0: 
+            perc_giant(G, root) # based on edge between centrality 
+            rm_edge_weight(G, 0.5) # social distancing 
         visited =[]
         state(G, G.nodes[root]['state'][time], root, time, weight) # updates root
         infect(G, time, root, G.nodes[root]['state'][time], visited, weight)
@@ -80,6 +81,8 @@ def spread(G, n):
     
     
 # probabilities code 
+      
+
 
 def state(G, connected_state, node, time, weight): 
     # a function that determines the next state of the given node 
@@ -95,26 +98,28 @@ def state(G, connected_state, node, time, weight):
         else:
             if lst[time+1] == 0 and connected_state == 1: # if the node has been in contact with infected indivduals 
                 x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
-                lst[time+1] = x
-                
+                lst[time+1] = x      
     elif lst[time] == 2: # if node is recovered 
         if len(lst)<(time+2):
             lst.append(2)
+            
     elif lst[time] == 1: # if node is infected 
         if len(lst)<(time+2):
-            if recover(lst): 
+            if recover(lst, node, G):
                 lst.append(2)
             else:
                 lst.append(1)
     return 
     
     
-def recover(lst): 
+def recover(lst, node, G): 
     # function that determines whether or not an infected node recovers
     summ = 0
     num = r.randint(14, 35) # randomly chooses the length of infectious period of individual
     for i in lst: 
         summ += i 
+    if summ >= 14: 
+        weight_to_zero(G, node) # after fourteen days -> go into isolation
     if summ >= num: 
         return True 
     else: 
@@ -146,57 +151,55 @@ def data(G):
 
 # perculation code 
 
+def weight_to_zero(G, node):
+    # takes in a node and makes all its edge weights = 0: 
+    for edge in G.edges(node): 
+        G[edge[0]][edge[1]]['weight'] == 0 
+    
 
 def rm_edge_weight(G, threshold): # negates edges below a certain threshold. (discard if their weight is below the threshold)
     for node in G:
         for edge in G.edges(node):
             if G[edge[0]][edge[1]]['weight'] <= threshold:
                 G[edge[0]][edge[1]]['weight'] = 0
-    
         
 def percolate(G):
     # the function will remove edges from the network ..... how to do it at some time t??
     remove = [] #edges to be removed
     centralities = nx.edge_betweenness_centrality(G)
-    for edge in G.edges():
-        if centralities[edge] > 0.02:
+    for edge in G.edges(): 
+        if centralities[edge] > 0.05:
             remove.append(edge)
-    G.remove_edges_from(remove)
-    
-def infected_communities(G, time):
-    
-    communities_generator = community.girvan_newman(G)
-    next_community2 = next(communities_generator) #will split graph into 2 communities
-    next_community3 = next(communities_generator)
-    next_community4 = next(communities_generator)
-    next_community5 = next(communities_generator)
-    next_community6 = next(communities_generator)
-    next_community7 = next(communities_generator)
-    next_community8 = next(communities_generator)
-    next_community9 = next(communities_generator)
-    next_community10 = next(communities_generator) #splits graph into 10 communities
-    
-    communities = sorted(map(sorted, next_community10), key=len, reverse = True)
-    
-    i = [] #infected nodes at time t in the largest community
-    s = [] #suceptible nodes at time t in the largest community
-    
-    for node in communities[0]: #looks at each node in largest community
-        
-        if G.nodes[node]['state'][time] == 1: #looks at states of nodes at time t
-            
-            i.append(node) #adds that node to list of infected ones
-            
-        elif G.nodes[node]['state'][time] == 0:
-            
-            s.append(node)
-    #print(len(i)/len(s))       
-    return i, s #computes ratio of number of infected/susc
-    
+    for edge in remove: 
+        G[edge[0]][edge[1]]['weight'] = 0     
+
+def random_remove(G, cut_prob):
+    # randomly negates certain edges of a graph 
+    for node in G: 
+        for edge in G.edges(node): 
+            x = np.random.binomial(1, cut_prob) #percentage of edges that will be cut in the beginning 
+            if x == 1: 
+               G[edge[0]][edge[1]]['weight'] = 0 
+
+ 
+def perc_giant(G, root): 
+    #isolates the giant coimponent of a graph and return a list of nodes in the giant component
+    lst_of_nodes = []
+    giant = max(nx.connected_component_subgraphs(G), key=len)
+    edge_list = nx.edge_boundary(G, giant.nodes(), nbunch2=None)
+    print(nx.info(giant))
+    for edge in edge_list: 
+        G[edge[0]][edge[1]]['weight'] = 0.01
+    if root in giant.nodes():
+        percolate(giant)
+    for node in giant: 
+        lst_of_nodes.append(node)
+    return lst_of_nodes
     
 
+
 if __name__ == "__main__":
-    n = 50   #S0 -> number of nodes at time t = 0.
+    n = 100  #S0 -> number of nodes at time t = 0.
     m = 3
     G = build_ba_model(n,m) #n is the number of people, m is the number of connections of each node
     add_attributes(G)
