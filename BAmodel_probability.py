@@ -9,11 +9,9 @@ import networkx as nx
 import random as r
 
 import numpy as np
-#n, p = 1, .33  # n = coins flipped, p = prob of success
-#s = np.random.binomial(n, p, 100)
 import matplotlib.pyplot as plt
 
-t = 50 #duration of the simulation
+t = 150 #duration of the simulation
 
 def build_ba_model(n,m):
     # a function that builds a B/A model 
@@ -36,16 +34,19 @@ def add_weights(G):
         #print( G.get_edge_data(edge[0], edge[1]))
     return
 
-def infect(G, time, root, num, visited):
+def infect(G, time, root, num, visited, weight):
     # a recursive funtion that recuesively visits all the nodes and updates their states based on the states of their neighbours 
-        state(G, num, root, time)
+        state(G, num, root, time, weight)
         for connection in G.edges(root):
             if connection not in visited:
+                weight = G[connection[0]][connection[1]]['weight']
+                #print(weight)
                 visited = add_edge(visited, connection)#adds edge to a list of visited edges
                 connection = connection[-1] #gets the connected node
-                infect(G, time, connection, G.nodes[root]['state'][time], visited)
+                infect(G, time, connection, G.nodes[root]['state'][time], visited, weight)
             else:
-                return
+                return 
+            
             
 def edge_counter(G, node): 
     num = 0
@@ -53,22 +54,27 @@ def edge_counter(G, node):
         num += 1
     return num 
 
-def state(G, connected_state, node, time): 
+def state(G, connected_state, node, time, weight): 
     # a function that determines the next state of the given node 
     connected = count(G, connected_state, node, time)
-    print(connected)
     lst = G.nodes[node]['state'] # list of states of the specific node
     if lst[time] == 0: # if the node is susceptible 
         if len(lst)<(time+2):
             if connected_state == 1:
-                x = np.random.binomial(1, 0.1) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
                 lst.append(x)
             else:
                 lst.append(0)
-        else: 
+        else:
+            if lst[time+1] == 0 and connected_state == 1: # if the node has been in contact with infected indivduals 
+                x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                lst[time+1] = x
+            '''
             if connected_state == 1: 
-                x = np.random.binomial(1, 0.1*(1+(connected)/edge_counter(G, node))) # beta *(1+infected connected nodes/total connected nodes)
+                x = np.random.binomial(1, 0.05*(1+(connected)/edge_counter(G, node))) # beta *(1+infected connected nodes/total connected nodes)
                 lst[time+1] = x 
+            '''
+            
     elif lst[time] == 2: # if node is recovered 
         if len(lst)<(time+2):
             lst.append(2)
@@ -85,12 +91,13 @@ def spread(G, n):
     time = 0
     root = r.randint(0, n-1)
     G.nodes[root]['state'][time] = 1
+    weight = 1 # initial weight for root infected node, not important 
+    percolate(G)
     while time < t:
         visited =[]
-        state(G, G.nodes[root]['state'][time], root, time) # updates root
-        infect(G, time, root, G.nodes[root]['state'][time], visited)
+        state(G, G.nodes[root]['state'][time], root, time, weight) # updates root
+        infect(G, time, root, G.nodes[root]['state'][time], visited, weight)
         time += 1
-    print(nx.get_node_attributes(G,'state'))
 
 def add_edge(lst, edge): 
     # function that adds all the visited edges to a list
@@ -104,7 +111,7 @@ def percolate(G):
     remove = [] #edges to be removed
     centralities = nx.edge_betweenness_centrality(G)
     for edge in G.edges():
-        if centralities[edge] > 0.006:
+        if centralities[edge] > 0.1:
             remove.append(edge)
     G.remove_edges_from(remove) # The nodes from remove are removed from the graph:
 

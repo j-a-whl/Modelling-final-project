@@ -278,7 +278,7 @@ plt.plot(data(G)[0]) #plotting time evolution of nuber of susceptible fellas
 plt.plot(data(G)[1]) #plotting time evolution of number of infected fellas
 plt.plot(data(G)[2]) #plotting time evoluition of number of recovered fellas
 
-infected_communities(G,10)
+#infected_communities(G,10)
 
 #DATA = nx.get_node_attributes(G,'state')
 #for every node, list of states at each time steps. length of each list = length of simulation

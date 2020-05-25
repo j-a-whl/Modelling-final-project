@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 25 13:34:36 2020
+
+@author: xox
+"""
+
+import networkx as nx
+import random as r
+import numpy as np
+import matplotlib.pyplot as plt
+
+#graph attribute and altering code 
+
+def build_ba_model(n,m):
+    # a function that builds a B/A model 
+    G = nx.generators.random_graphs.barabasi_albert_graph(n, m, seed=None)
+    return G
+
+def add_attributes(G):
+    # a function that adds 'state' and 'infected_connections' attribute to each node 
+    for node in G:
+        G.nodes[node]['state'] = [0] #0 is susceptibale, 1 is infected, 2 is recovered -> initiliases a grid of susceptable nodes
+        G.nodes[node]['infected_connections'] = [0]
+    return(G)
+    
+def add_weights(G):
+    # a function that adds weights to the edges of a graph
+    for edge in G.edges:
+        G[edge[0]][edge[1]]['weight'] = r.uniform(0, 1)
+    return
+
+def add_edge(lst, edge): 
+    # function that adds all the visited edges to a list
+    lst.append(edge)
+    new_edge = [edge[1], edge[0]]
+    lst.append(new_edge)
+    return lst
+
+def count(G, connected_state, node, time): #check this please 
+    # a function that counts the number of infected nodes connected to the given node 
+    if len(G.nodes[node]['infected_connections'])<(time+2):
+        G.nodes[node]['infected_connections'].append(connected_state)
+    else:
+        G.nodes[node]['infected_connections'][time+1] += connected_state
+    return G.nodes[node]['infected_connections'][time+1]
+
+#code for spreading of the infection 
+
+
+def infect(G, time, root, num, visited, weight):
+    # a recursive funtion that recuesively visits all the nodes and updates their states based on the states of their neighbours 
+        state(G, num, root, time, weight)
+        for connection in G.edges(root):
+            if connection not in visited:
+                weight = G[connection[0]][connection[1]]['weight']
+                #print(weight)
+                visited = add_edge(visited, connection)#adds edge to a list of visited edges
+                connection = connection[-1] #gets the connected node
+                infect(G, time, connection, G.nodes[root]['state'][time], visited, weight)
+            else:
+                return 
+            
+
+def spread(G, n): 
+    # function to spread a disease over a given number of time steps 
+    time = 0
+    root = r.randint(0, n-1)
+    G.nodes[root]['state'][time] = 1
+    weight = 1 # initial weight for root infected node, not important 
+    while time < t:
+        if time == 1: 
+            percolate(G)
+            rm_edge_weight(G, 0.5)
+        visited =[]
+        state(G, G.nodes[root]['state'][time], root, time, weight) # updates root
+        infect(G, time, root, G.nodes[root]['state'][time], visited, weight)
+        time += 1
+    
+    
+# probabilities code 
+
+def state(G, connected_state, node, time, weight): 
+    # a function that determines the next state of the given node 
+    connected = count(G, connected_state, node, time)
+    lst = G.nodes[node]['state'] # list of states of the specific node
+    if lst[time] == 0: # if the node is susceptible 
+        if len(lst)<(time+2):
+            if connected_state == 1:
+                x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                lst.append(x)
+            else:
+                lst.append(0)
+        else:
+            if lst[time+1] == 0 and connected_state == 1: # if the node has been in contact with infected indivduals 
+                x = np.random.binomial(1, 0.2*weight) # Add probability of infection from one person here(NEED TO INCLUDE WEIGHTS)
+                lst[time+1] = x
+                
+    elif lst[time] == 2: # if node is recovered 
+        if len(lst)<(time+2):
+            lst.append(2)
+    elif lst[time] == 1: # if node is infected 
+        if len(lst)<(time+2):
+            if recover(lst): 
+                lst.append(2)
+            else:
+                lst.append(1)
+    return 
+    
+    
+def recover(lst): 
+    # function that determines whether or not an infected node recovers
+    summ = 0
+    num = r.randint(14, 35) # randomly chooses the length of infectious period of individual
+    for i in lst: 
+        summ += i 
+    if summ >= num: 
+        return True 
+    else: 
+        return False
+
+# Data code 
+
+def data(G):
+    DATA = nx.get_node_attributes(G,'state') #dictionary -> node : [list of states of that node for all times]
+    tot_S = [] #shoudl look like this tot_S = [100, 99....0]
+    tot_I = [] # should look like this tot_I = [1, 2, ......peak.....decreasing]
+    tot_R = [] #shoudl look like this = [0,0,0,0,0,........1,2,3....increasing]
+    data = [tot_S, tot_I, tot_R]
+    
+    for time in range(t):
+        
+        my_list = [elem[time] for elem in DATA.values()]      #list of states at a given time step 
+        
+        s = my_list.count(0) #counts how many values are in state 0 - how many nodes are infected at time
+        tot_S.append(s)
+        
+        i = my_list.count(1)
+        tot_I.append(i)
+        
+        r = my_list.count(2)
+        tot_R.append(r)
+        
+    return data    
+
+# perculation code 
+
+
+def rm_edge_weight(G, threshold): # negates edges below a certain threshold. (discard if their weight is below the threshold)
+    for node in G:
+        for edge in G.edges(node):
+            if G[edge[0]][edge[1]]['weight'] <= threshold:
+                G[edge[0]][edge[1]]['weight'] = 0
+    
+        
+def percolate(G):
+    # the function will remove edges from the network ..... how to do it at some time t??
+    remove = [] #edges to be removed
+    centralities = nx.edge_betweenness_centrality(G)
+    for edge in G.edges():
+        if centralities[edge] > 0.02:
+            remove.append(edge)
+    G.remove_edges_from(remove)
+    
+def infected_communities(G, time):
+    
+    communities_generator = community.girvan_newman(G)
+    next_community2 = next(communities_generator) #will split graph into 2 communities
+    next_community3 = next(communities_generator)
+    next_community4 = next(communities_generator)
+    next_community5 = next(communities_generator)
+    next_community6 = next(communities_generator)
+    next_community7 = next(communities_generator)
+    next_community8 = next(communities_generator)
+    next_community9 = next(communities_generator)
+    next_community10 = next(communities_generator) #splits graph into 10 communities
+    
+    communities = sorted(map(sorted, next_community10), key=len, reverse = True)
+    
+    i = [] #infected nodes at time t in the largest community
+    s = [] #suceptible nodes at time t in the largest community
+    
+    for node in communities[0]: #looks at each node in largest community
+        
+        if G.nodes[node]['state'][time] == 1: #looks at states of nodes at time t
+            
+            i.append(node) #adds that node to list of infected ones
+            
+        elif G.nodes[node]['state'][time] == 0:
+            
+            s.append(node)
+    #print(len(i)/len(s))       
+    return i, s #computes ratio of number of infected/susc
+    
+    
+
+if __name__ == "__main__":
+    n = 50   #S0 -> number of nodes at time t = 0.
+    m = 3
+    G = build_ba_model(n,m) #n is the number of people, m is the number of connections of each node
+    add_attributes(G)
+    add_weights(G)
+    spread(G,n)
+    nx.draw(G)
+    plt.show()
+    
+    plt.plot(data(G)[0]) #plotting time evolution of nuber of susceptible fellas
+    plt.plot(data(G)[1]) #plotting time evolution of number of infected fellas
+    plt.plot(data(G)[2]) #plotting time evoluition of number of recovered fellas
