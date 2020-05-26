@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 def build_ba_model(n,m):
     # a function that builds a B/A model 
     G = nx.generators.random_graphs.barabasi_albert_graph(n, m, seed=None)
+    
     return G
 
 def add_attributes(G):
@@ -46,8 +47,14 @@ def count(G, connected_state, node, time): #check this please
         G.nodes[node]['infected_connections'][time+1] += connected_state
     return G.nodes[node]['infected_connections'][time+1]
 
-#code for spreading of the infection 
+def setup(n, m): 
+    G = build_ba_model(n,m) #n is the number of people, m is the number of connections of each node
+    random_choose(G, 0.2) # percentages of edges that are going to be removed
+    add_attributes(G)
+    add_weights(G)
+    return G
 
+#code for spreading of the infection 
 
 def infect(G, time, root, num, visited, weight):
     # a recursive funtion that recuesively visits all the nodes and updates their states based on the states of their neighbours 
@@ -60,14 +67,12 @@ def infect(G, time, root, num, visited, weight):
                 connection = connection[-1] #gets the connected node
                 infect(G, time, connection, G.nodes[root]['state'][time], visited, weight)
             else:
-                return 
-            
+                return    
 
 def spread(G, n): 
     # function to spread a disease over a given number of time steps 
     time = 0
     root = r.randint(0, n-1)
-    random_remove(G, 0.1) # percentages of edges that are going to be removed
     G.nodes[root]['state'][time] = 1
     weight = 1 # initial weight for root infected node, not important
     while time < t:
@@ -81,8 +86,6 @@ def spread(G, n):
     
     
 # probabilities code 
-      
-
 
 def state(G, connected_state, node, time, weight): 
     # a function that determines the next state of the given node 
@@ -110,7 +113,6 @@ def state(G, connected_state, node, time, weight):
             else:
                 lst.append(1)
     return 
-    
     
 def recover(lst, node, G): 
     # function that determines whether or not an infected node recovers
@@ -171,16 +173,21 @@ def percolate(G):
         if centralities[edge] > 0.05:
             remove.append(edge)
     for edge in remove: 
-        G[edge[0]][edge[1]]['weight'] = 0     
+        G[edge[0]][edge[1]]['weight'] = 0 
+    return 
 
-def random_remove(G, cut_prob):
+def random_choose(G, cut_prob):
     # randomly negates certain edges of a graph 
+    chosen = []
     for node in G: 
         for edge in G.edges(node): 
             x = np.random.binomial(1, cut_prob) #percentage of edges that will be cut in the beginning 
-            if x == 1: 
-               G[edge[0]][edge[1]]['weight'] = 0 
-
+            if x == 1:
+                chosen.append(edge)
+                #G[edge[0]][edge[1]]['weight'] = 0
+    G.remove_edges_from(chosen)
+    print(chosen)
+    return
  
 def perc_giant(G, root): 
     #isolates the giant coimponent of a graph and return a list of nodes in the giant component
@@ -195,19 +202,16 @@ def perc_giant(G, root):
     for node in giant: 
         lst_of_nodes.append(node)
     return lst_of_nodes
-    
+
 
 
 if __name__ == "__main__":
     n = 100  #S0 -> number of nodes at time t = 0.
     m = 3
-    G = build_ba_model(n,m) #n is the number of people, m is the number of connections of each node
-    add_attributes(G)
-    add_weights(G)
+    G = setup(n, m)
     spread(G,n)
     nx.draw(G)
     plt.show()
-    
     plt.plot(data(G)[0]) #plotting time evolution of nuber of susceptible fellas
     plt.plot(data(G)[1]) #plotting time evolution of number of infected fellas
     plt.plot(data(G)[2]) #plotting time evoluition of number of recovered fellas
