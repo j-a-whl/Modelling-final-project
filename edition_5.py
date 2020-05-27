@@ -149,7 +149,8 @@ def data(G):
         r = my_list.count(2)
         tot_R.append(r)
         
-    print(max(tot_I))    
+    print(max(tot_I))
+    print(tot_I.index(max(tot_I)))
     return data    
 
 # perculation code 
