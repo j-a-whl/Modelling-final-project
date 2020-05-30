@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #graph attribute and altering code 
+t = 150 # legth of a semester simulation
 
 def build_ba_model(n,m):
     # a function that builds a B/A model 
@@ -29,7 +30,7 @@ def add_attributes(G):
 def add_weights(G):
     # a function that adds weights to the edges of a graph
     for edge in G.edges:
-        G[edge[0]][edge[1]]['weight'] = r.uniform(0, 1)
+        G[edge[0]][edge[1]]['weight'] = r.uniform(0, 2)
     return
 
 def add_edge(lst, edge): 
@@ -49,7 +50,7 @@ def count(G, connected_state, node, time): #check this please
 
 def setup(n, m): 
     G = build_ba_model(n,m) #n is the number of people, m is the number of connections of each node
-    random_choose(G, 0.2) # percentages of edges that are going to be removed
+    #random_choose(G, 0.2) # percentages of edges that are going to be removed
     add_attributes(G)
     add_weights(G)
     return G
@@ -77,8 +78,10 @@ def spread(G, n):
     weight = 1 # initial weight for root infected node, not important
     while time < t:
         if time == 0: 
-            perc_giant(G, root) # based on edge between centrality 
+            #perc_giant(G, root) # based on edge between centrality 
             rm_edge_weight(G, 0.5) # social distancing 
+            random_choose(G, 0.2) # remove edges randomly - control
+            percolate(G) # remove edges based on edge betweeness cemtrality
         visited =[]
         state(G, G.nodes[root]['state'][time], root, time, weight) # updates root
         infect(G, time, root, G.nodes[root]['state'][time], visited, weight)
@@ -149,8 +152,12 @@ def data(G):
         r = my_list.count(2)
         tot_R.append(r)
         
-    print(max(tot_I))
-    print(tot_I.index(max(tot_I)))
+    print('peak', max(tot_I)) #print all necessary information
+    print('occurs at' , tot_I.index(max(tot_I)))
+    print('never infected' , min(tot_S))
+    print('no new infection' , tot_S.index(min(tot_S)))
+    print('total that get it' , max(tot_R))
+    print('all recover at' , tot_R.index(max(tot_R)))
     return data    
 
 # perculation code 
@@ -172,7 +179,7 @@ def percolate(G):
     remove = [] #edges to be removed
     centralities = nx.edge_betweenness_centrality(G)
     for edge in G.edges(): 
-        if centralities[edge] > 0.05:
+        if centralities[edge] > 0.00065:
             remove.append(edge)
     for edge in remove: 
         G[edge[0]][edge[1]]['weight'] = 0 
@@ -186,9 +193,9 @@ def random_choose(G, cut_prob):
             x = np.random.binomial(1, cut_prob) #percentage of edges that will be cut in the beginning 
             if x == 1:
                 chosen.append(edge)
-                #G[edge[0]][edge[1]]['weight'] = 0
-    G.remove_edges_from(chosen)
-    print(chosen)
+                G[edge[0]][edge[1]]['weight'] = 0 #USE THIS - SETTING EDGE WEIGHT TO ZERO TO AVOID DATA FUNTION NON WORKING
+    #G.remove_edges_from(chosen)
+    #print(chosen)
     return
  
 def perc_giant(G, root): 
@@ -208,7 +215,7 @@ def perc_giant(G, root):
 
 
 if __name__ == "__main__":
-    n = 100  #S0 -> number of nodes at time t = 0.
+    n = 1000  #S0 -> number of nodes at time t = 0.
     m = 3
     G = setup(n, m)
     spread(G,n)
