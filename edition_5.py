@@ -78,8 +78,7 @@ def spread(G, n):
     weight = 1 # initial weight for root infected node, not important
     while time < t:
         if time == 0: 
-            #perc_giant(G, root) # based on edge between centrality 
-            rm_edge_weight(G, 0.5) # social distancing 
+            rm_edge_weight(G, 0.5) # remove edges keeping ones with highest weights only 
             random_choose(G, 0.2) # remove edges randomly - control
             percolate(G) # remove edges based on edge betweeness cemtrality
         visited =[]
@@ -198,20 +197,6 @@ def random_choose(G, cut_prob):
     #print(chosen)
     return
  
-def perc_giant(G, root): 
-    #isolates the giant coimponent of a graph and return a list of nodes in the giant component
-    lst_of_nodes = []
-    giant = max(nx.connected_component_subgraphs(G), key=len)
-    edge_list = nx.edge_boundary(G, giant.nodes(), nbunch2=None)
-    print(nx.info(giant))
-    for edge in edge_list: 
-        G[edge[0]][edge[1]]['weight'] = 0.01
-    if root in giant.nodes():
-        percolate(giant)
-    for node in giant: 
-        lst_of_nodes.append(node)
-    return lst_of_nodes
-
 
 
 if __name__ == "__main__":
